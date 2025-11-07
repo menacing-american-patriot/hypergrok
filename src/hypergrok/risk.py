@@ -25,3 +25,14 @@ class RiskManager:
 
         if portfolio.available_balance() < notional / (signal.leverage or 1.0):
             raise RuntimeError("Insufficient available balance for signal")
+
+
+@dataclass
+class AggressiveRiskManager:
+    def validate_signal(self, *, portfolio: PortfolioState, signal: TradeSignal) -> None:
+        if signal.size <= 0:
+            raise RuntimeError("Signal size must be positive")
+        if signal.leverage is not None and signal.leverage <= 0:
+            raise RuntimeError("Signal leverage must be positive")
+        if portfolio.available_balance() <= 0:
+            raise RuntimeError("No available balance to allocate")

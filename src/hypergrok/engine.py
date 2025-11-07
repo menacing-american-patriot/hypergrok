@@ -10,7 +10,7 @@ from typing import Optional
 from hypergrok.clients import GrokClient, HyperliquidClient
 from hypergrok.config import AppConfig
 from hypergrok.models import PortfolioState
-from hypergrok.risk import RiskManager
+from hypergrok.risk import AggressiveRiskManager, RiskManager
 from hypergrok.strategy import GrokHyperliquidStrategy
 from hypergrok.wallet import WalletManager
 
@@ -53,7 +53,10 @@ class TradingEngine:
             state=PortfolioState(balance=self._config.wallet.initial_balance),
             min_cash_reserve=self._config.wallet.min_cash_reserve,
         )
-        risk = RiskManager(config=self._config.risk)
+        if self._config.strategy.auto_max_profit:
+            risk = AggressiveRiskManager()
+        else:
+            risk = RiskManager(config=self._config.risk)
 
         self._strategy = GrokHyperliquidStrategy(
             config=self._config,

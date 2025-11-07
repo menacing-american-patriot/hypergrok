@@ -24,10 +24,10 @@ cp .env.example .env
 Key sections in the env file:
 
 - **Wallet** (`WALLET_*`): custodied capital funding the exchange. Ensure `WALLET_INITIAL_BALANCE` represents off-exchange funds and `WALLET_MIN_CASH_RESERVE` leaves a safety buffer.
-- **Risk** (`RISK_*`): absolute caps per trade and per day. Trades violating limits are rejected before submission.
+- **Risk** (`RISK_*`): absolute caps per trade and per day. Trades violating limits are rejected before submission. When `STRATEGY_AUTO_MAX_PROFIT=true`, these fall back to aggressive presets if omitted.
 - **Hyperliquid** (`HYPERLIQUID_*`): REST endpoint and credentials. Use testnet credentials when experimenting.
 - **Grok** (`GROK_*`): endpoint, key, and optional inference parameters like `GROK_TEMPERATURE`.
-- **Strategy** (`STRATEGY_*`): trading markets, polling cadence, and whether to enable live order placement (`STRATEGY_ENABLE_LIVE=true`). Leave `false` to simulate without funding or orders.
+- **Strategy** (`STRATEGY_*`): trading markets, polling cadence, and whether to enable live order placement (`STRATEGY_ENABLE_LIVE=true`). Leave `false` to simulate without funding or orders. Auto mode controls (`STRATEGY_AUTO_MAX_PROFIT`, `STRATEGY_AUTO_TARGET_LEVERAGE`, `STRATEGY_AUTO_POSITION_FRACTION`) tune autonomous behaviour.
 
 ### JSON Configuration
 
@@ -62,7 +62,10 @@ As an alternative, create a JSON file with the same structure used by `AppConfig
   "strategy": {
     "poll_interval_seconds": 5,
     "trading_pairs": ["BTC-PERP", "ETH-PERP"],
-    "enable_live_trading": false
+    "enable_live_trading": false,
+    "auto_max_profit": false,
+    "auto_target_leverage": 4,
+    "auto_position_fraction": 1.0
   }
 }
 ```
@@ -87,6 +90,13 @@ Omit `--cycles` to run continuously. Use `CTRL+C` to stop.
 
 - Keep `STRATEGY_ENABLE_LIVE=false` to run in deterministic simulation mode using the built-in `SimulatedHyperliquidClient` that generates synthetic prices and avoids real funding.
 - Switch to `true` only after validating risk controls and wallet balances; the engine will attempt to fund the exchange wallet and submit market orders at the retrieved mark price.
+
+## Autonomous Max-Profit Mode
+
+- Enable by setting `STRATEGY_AUTO_MAX_PROFIT=true` in the environment file or by adding `"auto_max_profit": true` to the JSON configuration.
+- `STRATEGY_AUTO_TARGET_LEVERAGE` (or `"auto_target_leverage"`) sets the leverage used when Grok omits it; defaults to 4.
+- `STRATEGY_AUTO_POSITION_FRACTION` (or `"auto_position_fraction"`) controls what fraction of available collateral is deployed per trade; defaults to 1.0 for full-size positions.
+- In this mode an aggressive risk manager removes manual caps—monitor capital closely and expect higher volatility.
 
 ## Funding Workflow
 

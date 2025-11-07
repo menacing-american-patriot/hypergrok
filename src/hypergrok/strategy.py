@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable
+from typing import Dict, Iterable
 
 from hypergrok.clients import GrokClient, HyperliquidClient
 from hypergrok.config import AppConfig
@@ -34,6 +34,7 @@ class GrokHyperliquidStrategy:
         logger.info("Fetching market snapshots for %s", self._config.strategy.trading_pairs)
         snapshots = await self._hyperliquid.fetch_market_snapshots(self._config.strategy.trading_pairs)
         signal = await self._generate_signal(snapshots.values())
+        signal = self._apply_auto_mode(signal, snapshots)
         self._risk.validate_signal(portfolio=self._wallet.state, signal=signal)
 
         collateral = self._collateral_required(signal, snapshots[signal.symbol])
@@ -60,3 +61,26 @@ class GrokHyperliquidStrategy:
         notional = snapshot.mark_price * signal.size
         leverage = signal.leverage or 1.0
         return notional / leverage
+
+    def _apply_auto_mode(self, signal: TradeSignal, snapshots: Dict[str, MarketSnapshot]) -> TradeSignal:
+        if not self._config.strategy.auto_max_profit:
+            return signal
+        snapshot = snapshots.get(signal.symbol)
+        if snapshot is None:
+            raise RuntimeError(f"Snapshot for {signal.symbol} not available")
+        collateral = self._wallet.state.available_balance() * self._config.strategy.auto_position_fraction
+        if collateral <= 0:
+            raise RuntimeError("Auto mode has no capital to allocate")
+        leverage = max(signal.leverage or self._config.strategy.auto_target_leverage, 1.0)
+        notional = collateral * leverage
+        size = notional / snapshot.mark_price
+        if size <= 0:
+            raise RuntimeError("Auto mode produced zero position size")
+        adjusted = signal.model_copy(update={"size": size, "leverage": leverage})
+        logger.info(
+            "Auto mode scaled signal to size %.4f with leverage %.2f (collateral %.2f)",
+            adjusted.size,
+            adjusted.leverage or 1.0,
+            collateral,
+        )
+        return adjusted
