@@ -1,0 +1,15 @@
+# These are supported funding model platforms
+
+github: [menacing-american-patriot]
+patreon: americancbt
+open_collective: # Replace with a single Open Collective username
+ko_fi: americancbt
+tidelift: # Replace with a single Tidelift platform-name/package-name e.g., npm/babel
+community_bridge: # Replace with a single Community Bridge project-name e.g., cloud-foundry
+liberapay: # Replace with a single Liberapay username
+issuehunt: # Replace with a single IssueHunt username
+lfx_crowdfunding: # Replace with a single LFX Crowdfunding project-name e.g., cloud-foundry
+polar: americancbt
+buy_me_a_coffee: # Replace with a single Buy Me a Coffee username
+thanks_dev: menacing-american-patriot
+custom: ["https://buy.stripe.com/dR601p6cD07O8uY5kl", "ethereum://jeffstein.eth"]
